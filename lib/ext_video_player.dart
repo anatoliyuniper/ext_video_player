@@ -272,12 +272,11 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     VideoQuality quality = youtubeVideoQuality ?? VideoQuality.medium360;
 
-    String finalYoutubeUrl =
-        await _getYoutubeUrlOld(_matchVideoQualityToYoutubeQuality(quality));
+    String finalYoutubeUrl = await _getYoutubeUrlNew(quality);
 
     if (finalYoutubeUrl == dataSource) {
       print("ExtVideoPlayer: Could not get youtube url using first way");
-      finalYoutubeUrl = await _getYoutubeUrlNew(quality);
+      finalYoutubeUrl = await _getYoutubeUrlOld(_matchVideoQualityToYoutubeQuality(quality));
     }
 
     DataSource dataSourceDescription;
