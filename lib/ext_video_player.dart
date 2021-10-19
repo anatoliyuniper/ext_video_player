@@ -276,18 +276,18 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     VideoQuality quality = youtubeVideoQuality ?? VideoQuality.medium360;
 
     final getUrlNewTimeStart = _getCurrentTimeMs();
-    String finalYoutubeUrl = await _getYoutubeUrlNew(quality);
+    String finalYoutubeUrl = await _getYoutubeUrlOld(_matchVideoQualityToYoutubeQuality(quality));
 
     if (_logPerformance) {
-      print("ExtVideoPlayer: _getYoutubeUrlNew time taken=${_getCurrentTimeMs() - getUrlNewTimeStart}ms");
+      print("ExtVideoPlayer: _getYoutubeUrlOld time taken=${_getCurrentTimeMs() - getUrlNewTimeStart}ms");
     }
 
     if (finalYoutubeUrl == dataSource) {
       print("ExtVideoPlayer: Could not get youtube url using first way");
       final getUrlOldTimeStart = _getCurrentTimeMs();
-      finalYoutubeUrl = await _getYoutubeUrlOld(_matchVideoQualityToYoutubeQuality(quality));
+      finalYoutubeUrl = await _getYoutubeUrlNew(quality);
       if (_logPerformance) {
-        print("ExtVideoPlayer: _getYoutubeUrlOld time taken=${_getCurrentTimeMs() - getUrlOldTimeStart}ms");
+        print("ExtVideoPlayer: _getYoutubeUrlNew time taken=${_getCurrentTimeMs() - getUrlOldTimeStart}ms");
       }
     }
 
