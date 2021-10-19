@@ -252,6 +252,9 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// [initialize()] is called.
   final Future<ClosedCaptionFile> closedCaptionFile;
 
+  /// Flag for whether to print operations time taken
+  final bool _logPerformance = true;
+
   ClosedCaptionFile _closedCaptionFile;
   Timer _timer;
   bool _isDisposed = false;
@@ -272,11 +275,20 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     VideoQuality quality = youtubeVideoQuality ?? VideoQuality.medium360;
 
+    final getUrlNewTimeStart = _getCurrentTimeMs();
     String finalYoutubeUrl = await _getYoutubeUrlNew(quality);
+
+    if (_logPerformance) {
+      print("ExtVideoPlayer: _getYoutubeUrlNew time taken=${_getCurrentTimeMs() - getUrlNewTimeStart}ms");
+    }
 
     if (finalYoutubeUrl == dataSource) {
       print("ExtVideoPlayer: Could not get youtube url using first way");
+      final getUrlOldTimeStart = _getCurrentTimeMs();
       finalYoutubeUrl = await _getYoutubeUrlOld(_matchVideoQualityToYoutubeQuality(quality));
+      if (_logPerformance) {
+        print("ExtVideoPlayer: _getYoutubeUrlOld time taken=${_getCurrentTimeMs() - getUrlOldTimeStart}ms");
+      }
     }
 
     DataSource dataSourceDescription;
@@ -308,10 +320,15 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           .setMixWithOthers(videoPlayerOptions.mixWithOthers);
     }
 
+    final videoPlatformCreateTimeStart = _getCurrentTimeMs();
     _textureId = await _videoPlayerPlatform.create(dataSourceDescription);
+    if (_logPerformance) {
+      print("ExtVideoPlayer: _videoPlayerPlatform.create time taken=${_getCurrentTimeMs() - videoPlatformCreateTimeStart}ms");
+    }
     _creatingCompleter.complete(null);
     final Completer<void> initializingCompleter = Completer<void>();
 
+    final initializeStart = _getCurrentTimeMs();
     void eventListener(VideoEvent event) {
       if (_isDisposed) {
         return;
@@ -319,6 +336,9 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
       switch (event.eventType) {
         case VideoEventType.initialized:
+          if (_logPerformance) {
+            print("ExtVideoPlayer: initialize time taken=${_getCurrentTimeMs() - initializeStart}ms");
+          }
           value = value.copyWith(
             duration: event.duration,
             size: event.size,
@@ -498,6 +518,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     }
 
     return null;
+  }
+
+  int _getCurrentTimeMs() {
+    return DateTime.now().millisecondsSinceEpoch;
   }
 
   @override
