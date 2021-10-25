@@ -1,29 +1,29 @@
 import 'package:pigeon/pigeon_lib.dart';
 
 class TextureMessage {
-  int textureId;
+  late int textureId;
 }
 
 class LoopingMessage {
-  int textureId;
-  bool isLooping;
+  late int textureId;
+  late bool isLooping;
 }
 
 class VolumeMessage {
-  int textureId;
-  double volume;
+  late int textureId;
+  late double volume;
 }
 
 class PositionMessage {
-  int textureId;
-  int position;
+  late int textureId;
+  late int position;
 }
 
 class CreateMessage {
-  String asset;
-  String uri;
-  String packageName;
-  String formatHint;
+  late String asset;
+  late String uri;
+  late String packageName;
+  late String formatHint;
 }
 
 @HostApi()

@@ -6,15 +6,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:ext_video_player/youtube_explode/youtube_explode_dart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 import 'src/closed_caption_file.dart';
+import 'youtube_explode/videos/streams/streams.dart';
 
 export 'package:video_player_platform_interface/video_player_platform_interface.dart'
     show DurationRange, DataSourceType, VideoFormat, VideoPlayerOptions;
@@ -44,7 +45,7 @@ class VideoPlayerValue {
     @required this.duration,
     this.size,
     this.position = const Duration(),
-    this.caption = const Caption(),
+    Caption? caption,
     this.buffered = const <DurationRange>[],
     this.isPlaying = false,
     this.isLooping = false,
@@ -52,20 +53,20 @@ class VideoPlayerValue {
     this.volume = 1.0,
     this.playbackSpeed = 1.0,
     this.errorDescription,
-  });
+  }) : caption = caption ?? Caption();
 
   /// Returns an instance with a `null` [Duration].
   VideoPlayerValue.uninitialized() : this(duration: null);
 
   /// Returns an instance with a `null` [Duration] and the given
   /// [errorDescription].
-  VideoPlayerValue.erroneous(String errorDescription)
+  VideoPlayerValue.erroneous(String? errorDescription)
       : this(duration: null, errorDescription: errorDescription);
 
   /// The total duration of the video.
   ///
   /// Is null when [initialized] is false.
-  final Duration duration;
+  final Duration? duration;
 
   /// The current playback position.
   final Duration position;
@@ -97,12 +98,12 @@ class VideoPlayerValue {
   /// A description of the error if present.
   ///
   /// If [hasError] is false this is [null].
-  final String errorDescription;
+  final String? errorDescription;
 
   /// The [size] of the currently loaded video.
   ///
   /// Is null when [initialized] is false.
-  final Size size;
+  final Size? size;
 
   /// Indicates whether or not the video has been loaded and is ready to play.
   bool get initialized => duration != null;
@@ -113,11 +114,11 @@ class VideoPlayerValue {
 
   /// Returns [size.width] / [size.height] when size is non-null, or `1.0.` when
   /// size is null or the aspect ratio would be less than or equal to 0.0.
-  double get aspectRatio {
-    if (size == null || size.width == 0 || size.height == 0) {
+  double? get aspectRatio {
+    if (size == null || size!.width == 0 || size!.height == 0) {
       return 1.0;
     }
-    final double aspectRatio = size.width / size.height;
+    final double aspectRatio = size!.width / size!.height;
     if (aspectRatio <= 0) {
       return 1.0;
     }
@@ -127,17 +128,17 @@ class VideoPlayerValue {
   /// Returns a new instance that has the same values as this current instance,
   /// except for any overrides passed in as arguments to [copyWidth].
   VideoPlayerValue copyWith({
-    Duration duration,
-    Size size,
-    Duration position,
-    Caption caption,
-    List<DurationRange> buffered,
-    bool isPlaying,
-    bool isLooping,
-    bool isBuffering,
-    double volume,
-    double playbackSpeed,
-    String errorDescription,
+    Duration? duration,
+    Size? size,
+    Duration? position,
+    Caption? caption,
+    List<DurationRange>? buffered,
+    bool? isPlaying,
+    bool? isLooping,
+    bool? isBuffering,
+    double? volume,
+    double? playbackSpeed,
+    String? errorDescription,
   }) {
     return VideoPlayerValue(
       duration: duration ?? this.duration,
@@ -223,54 +224,54 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         youtubeVideoQuality = null,
         super(VideoPlayerValue(duration: null));
 
-  int _textureId;
+  int? _textureId;
 
   /// The URI to the video file. This will be in different formats depending on
   /// the [DataSourceType] of the original video.
   final String dataSource;
 
-  final VideoQuality youtubeVideoQuality;
+  final VideoQuality? youtubeVideoQuality;
 
   /// **Android only**. Will override the platform's generic file format
   /// detection with whatever is set here.
-  final VideoFormat formatHint;
+  final VideoFormat? formatHint;
 
   /// Describes the type of data source this [VideoPlayerController]
   /// is constructed with.
   final DataSourceType dataSourceType;
 
   /// Provide additional configuration options (optional). Like setting the audio mode to mix
-  final VideoPlayerOptions videoPlayerOptions;
+  final VideoPlayerOptions? videoPlayerOptions;
 
   /// Only set for [asset] videos. The package that the asset was loaded from.
-  final String package;
+  final String? package;
 
   /// Optional field to specify a file containing the closed
   /// captioning.
   ///
   /// This future will be awaited and the file will be loaded when
   /// [initialize()] is called.
-  final Future<ClosedCaptionFile> closedCaptionFile;
+  final Future<ClosedCaptionFile>? closedCaptionFile;
 
   /// Flag for whether to print operations time taken
   final bool _logPerformance = true;
 
-  ClosedCaptionFile _closedCaptionFile;
-  Timer _timer;
+  ClosedCaptionFile? _closedCaptionFile;
+  Timer? _timer;
   bool _isDisposed = false;
-  Completer<void> _creatingCompleter;
-  StreamSubscription<dynamic> _eventSubscription;
-  _VideoAppLifeCycleObserver _lifeCycleObserver;
+  Completer<void>? _creatingCompleter;
+  StreamSubscription<dynamic>? _eventSubscription;
+  _VideoAppLifeCycleObserver? _lifeCycleObserver;
 
   /// This is just exposed for testing. It shouldn't be used by anyone depending
   /// on the plugin.
   @visibleForTesting
-  int get textureId => _textureId;
+  int get textureId => _textureId ?? 0;
 
   /// Attempts to open the given [dataSource] and load metadata about the video.
   Future<void> initialize() async {
     _lifeCycleObserver = _VideoAppLifeCycleObserver(this);
-    _lifeCycleObserver.initialize();
+    _lifeCycleObserver?.initialize();
     _creatingCompleter = Completer<void>();
 
     VideoQuality quality = youtubeVideoQuality ?? VideoQuality.medium360;
@@ -317,7 +318,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     if (videoPlayerOptions?.mixWithOthers != null) {
       await _videoPlayerPlatform
-          .setMixWithOthers(videoPlayerOptions.mixWithOthers);
+          .setMixWithOthers(videoPlayerOptions!.mixWithOthers);
     }
 
     final videoPlatformCreateTimeStart = _getCurrentTimeMs();
@@ -325,7 +326,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     if (_logPerformance) {
       print("ExtVideoPlayer: _videoPlayerPlatform.create time taken=${_getCurrentTimeMs() - videoPlatformCreateTimeStart}ms");
     }
-    _creatingCompleter.complete(null);
+    _creatingCompleter?.complete(null);
     final Completer<void> initializingCompleter = Completer<void>();
 
     final initializeStart = _getCurrentTimeMs();
@@ -374,7 +375,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     }
 
     void errorListener(Object obj) {
-      final PlatformException e = obj;
+      final PlatformException e = obj as PlatformException;
       value = VideoPlayerValue.erroneous(e.message);
       _timer?.cancel();
       if (!initializingCompleter.isCompleted) {
@@ -383,7 +384,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     }
 
     _eventSubscription = _videoPlayerPlatform
-        .videoEventsFor(_textureId)
+        .videoEventsFor(textureId)
         .listen(eventListener, onError: errorListener);
     return initializingCompleter.future;
   }
@@ -419,12 +420,12 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
   Future<String> _getYoutubeUrlNew(VideoQuality quality) async {
     String finalYoutubeUrl = dataSource;
-    String videoId = _getIdFromUrl(dataSource);
+    String? videoId = _getIdFromUrl(dataSource);
     if (videoId != null) {
       try {
         var yt = YoutubeExplode();
         var manifest = await yt.videos.streamsClient.getManifest(videoId);
-        Uri videoUri;
+        Uri? videoUri;
         manifest.muxed.forEach((m) {
           if (quality == m.videoQuality) {
             videoUri = m.url;
@@ -444,7 +445,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
   Future<String> _getYoutubeUrlOld(VideoYoutubeQuality quality) async {
     String finalYoutubeUrl = dataSource;
-    String videoId = _getIdFromUrl(dataSource);
+    String? videoId = _getIdFromUrl(dataSource);
     if (videoId != null) {
       try {
         Map<String, String> videoUrls = Map();
@@ -459,14 +460,14 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         var response = await http.get(Uri.parse(_fetchUrl));
 
         Uri uri = Uri.parse('http://google.com?' + response.body);
-        var jsonRes = jsonDecode(uri.queryParameters['player_response']);
+        var jsonRes = jsonDecode(uri.queryParameters['player_response']!);
         var formats = jsonRes['streamingData']['formats'];
         formats.forEach((format) {
           if (videoUrls[format['quality']] == null) {
             videoUrls[format['quality']] = format['url'];
           }
         });
-        String newUrl = videoUrls[quality.toString().split('.').last];
+        String? newUrl = videoUrls[quality.toString().split('.').last];
 
         if (newUrl == null) {
           for (int i = quality.index + 1;
@@ -493,7 +494,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   }
 
   /// To Get VideoId from Url
-  static String _getIdFromUrl(String url, [bool trimWhitespaces = true]) {
+  static String? _getIdFromUrl(String? url, [bool trimWhitespaces = true]) {
     List<RegExp> _regexps = [
       RegExp(
           r'^https:\/\/(?:www\.|m\.)?youtube\.com\/watch\?v=([_\-a-zA-Z0-9]{11}).*$'),
@@ -511,7 +512,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     }
 
     for (RegExp exp in _regexps) {
-      final Match match = exp.firstMatch(url);
+      final Match? match = exp.firstMatch(url);
       if (match != null && match.groupCount >= 1) {
         return match.group(1);
       }
@@ -527,14 +528,14 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   @override
   Future<void> dispose() async {
     if (_creatingCompleter != null) {
-      await _creatingCompleter.future;
+      await _creatingCompleter?.future;
       if (!_isDisposed) {
         _isDisposed = true;
         _timer?.cancel();
         await _eventSubscription?.cancel();
-        await _videoPlayerPlatform.dispose(_textureId);
+        await _videoPlayerPlatform.dispose(textureId);
       }
-      _lifeCycleObserver.dispose();
+      _lifeCycleObserver?.dispose();
     }
     _isDisposed = true;
     super.dispose();
@@ -567,7 +568,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     if (!value.initialized || _isDisposed) {
       return;
     }
-    await _videoPlayerPlatform.setLooping(_textureId, value.isLooping);
+    await _videoPlayerPlatform.setLooping(textureId, value.isLooping);
   }
 
   Future<void> _applyPlayPause() async {
@@ -575,7 +576,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       return;
     }
     if (value.isPlaying) {
-      await _videoPlayerPlatform.play(_textureId);
+      await _videoPlayerPlatform.play(textureId);
 
       // Cancel previous timer.
       _timer?.cancel();
@@ -585,11 +586,11 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           if (_isDisposed) {
             return;
           }
-          final Duration newPosition = await position;
+          final Duration? newPosition = await position;
           if (_isDisposed) {
             return;
           }
-          _updatePosition(newPosition);
+          _updatePosition(newPosition!);
         },
       );
 
@@ -599,7 +600,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       await _applyPlaybackSpeed();
     } else {
       _timer?.cancel();
-      await _videoPlayerPlatform.pause(_textureId);
+      await _videoPlayerPlatform.pause(textureId);
     }
   }
 
@@ -607,7 +608,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     if (!value.initialized || _isDisposed) {
       return;
     }
-    await _videoPlayerPlatform.setVolume(_textureId, value.volume);
+    await _videoPlayerPlatform.setVolume(textureId, value.volume);
   }
 
   Future<void> _applyPlaybackSpeed() async {
@@ -621,17 +622,17 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     if (!value.isPlaying) return;
 
     await _videoPlayerPlatform.setPlaybackSpeed(
-      _textureId,
+      textureId,
       value.playbackSpeed,
     );
   }
 
   /// The position in the current video.
-  Future<Duration> get position async {
+  Future<Duration?> get position async {
     if (_isDisposed) {
       return null;
     }
-    return await _videoPlayerPlatform.getPosition(_textureId);
+    return await _videoPlayerPlatform.getPosition(textureId);
   }
 
   /// Sets the video's current timestamp to be at [moment]. The next
@@ -643,12 +644,12 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     if (_isDisposed) {
       return;
     }
-    if (position > value.duration) {
-      position = value.duration;
+    if (position > value.duration!) {
+      position = value.duration!;
     } else if (position < const Duration()) {
       position = const Duration();
     }
-    await _videoPlayerPlatform.seekTo(_textureId, position);
+    await _videoPlayerPlatform.seekTo(textureId, position);
     _updatePosition(position);
   }
 
@@ -708,8 +709,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     }
 
     // TODO: This would be more efficient as a binary search.
-    for (final caption in _closedCaptionFile.captions) {
-      if (caption.start <= position && caption.end >= position) {
+    for (final caption in _closedCaptionFile!.captions) {
+      if (caption.start! <= position && caption.end! >= position) {
         return caption;
       }
     }
@@ -730,7 +731,7 @@ class _VideoAppLifeCycleObserver extends Object with WidgetsBindingObserver {
   final VideoPlayerController _controller;
 
   void initialize() {
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance?.addObserver(this);
   }
 
   @override
@@ -750,7 +751,7 @@ class _VideoAppLifeCycleObserver extends Object with WidgetsBindingObserver {
   }
 
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance?.removeObserver(this);
   }
 }
 
@@ -779,8 +780,8 @@ class _VideoPlayerState extends State<VideoPlayer> {
     };
   }
 
-  VoidCallback _listener;
-  int _textureId;
+  late VoidCallback _listener;
+  int? _textureId;
 
   @override
   void initState() {
@@ -809,7 +810,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
   Widget build(BuildContext context) {
     return _textureId == null
         ? Container()
-        : _videoPlayerPlatform.buildView(_textureId);
+        : _videoPlayerPlatform.buildView(_textureId!);
   }
 }
 
@@ -855,8 +856,8 @@ class VideoProgressColors {
 
 class _VideoScrubber extends StatefulWidget {
   _VideoScrubber({
-    @required this.child,
-    @required this.controller,
+    required this.child,
+    required this.controller,
   });
 
   final Widget child;
@@ -874,10 +875,10 @@ class _VideoScrubberState extends State<_VideoScrubber> {
   @override
   Widget build(BuildContext context) {
     void seekToRelativePosition(Offset globalPosition) {
-      final RenderBox box = context.findRenderObject();
-      final Offset tapPos = box.globalToLocal(globalPosition);
+      final RenderObject box = context.findRenderObject()!;
+      final Offset tapPos = (box as RenderBox).globalToLocal(globalPosition);
       final double relative = tapPos.dx / box.size.width;
-      final Duration position = controller.value.duration * relative;
+      final Duration position = controller.value.duration! * relative;
       controller.seekTo(position);
     }
 
@@ -930,10 +931,11 @@ class VideoProgressIndicator extends StatefulWidget {
   /// to `top: 5.0`.
   VideoProgressIndicator(
     this.controller, {
-    VideoProgressColors colors,
-    this.allowScrubbing,
+    VideoProgressColors? colors,
+    bool? allowScrubbing,
     this.padding = const EdgeInsets.only(top: 5.0),
-  }) : colors = colors ?? VideoProgressColors();
+  })  :allowScrubbing = allowScrubbing ?? false,
+       colors = colors ?? VideoProgressColors();
 
   /// The [VideoPlayerController] that actually associates a video with this
   /// widget.
@@ -970,7 +972,7 @@ class _VideoProgressIndicatorState extends State<VideoProgressIndicator> {
     };
   }
 
-  VoidCallback listener;
+  late VoidCallback listener;
 
   VideoPlayerController get controller => widget.controller;
 
@@ -992,7 +994,7 @@ class _VideoProgressIndicatorState extends State<VideoProgressIndicator> {
   Widget build(BuildContext context) {
     Widget progressIndicator;
     if (controller.value.initialized) {
-      final int duration = controller.value.duration.inMilliseconds;
+      final int duration = controller.value.duration!.inMilliseconds;
       final int position = controller.value.position.inMilliseconds;
 
       int maxBuffering = 0;
@@ -1063,17 +1065,17 @@ class ClosedCaption extends StatelessWidget {
   /// [VideoPlayerValue.caption].
   ///
   /// If [text] is null, nothing will be displayed.
-  const ClosedCaption({Key key, this.text, this.textStyle}) : super(key: key);
+  const ClosedCaption({Key? key, this.text, this.textStyle}) : super(key: key);
 
   /// The text that will be shown in the closed caption, or null if no caption
   /// should be shown.
-  final String text;
+  final String? text;
 
   /// Specifies how the text in the closed caption should look.
   ///
   /// If null, defaults to [DefaultTextStyle.of(context).style] with size 36
   /// font colored white.
-  final TextStyle textStyle;
+  final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -1098,7 +1100,7 @@ class ClosedCaption extends StatelessWidget {
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 2.0),
-            child: Text(text, style: effectiveTextStyle),
+            child: Text(text!, style: effectiveTextStyle),
           ),
         ),
       ),
