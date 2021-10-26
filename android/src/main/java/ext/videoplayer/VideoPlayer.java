@@ -183,6 +183,7 @@ final class VideoPlayer {
         exoPlayer.addListener(new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(int playbackState) {
+                Log.d(TAG, "onPlaybackStateChanged: " + playbackState);
                 if (playbackState == Player.STATE_BUFFERING) {
                     sendBufferingUpdate();
                 } else if (playbackState == Player.STATE_READY) {
@@ -201,6 +202,11 @@ final class VideoPlayer {
             public void onPlayerError(PlaybackException error) {
                 Log.e(TAG, "onPlayerError", error);
                 eventSink.error("VideoError", "Video player had error " + error, null);
+            }
+
+            @Override
+            public void onPlayerErrorChanged(PlaybackException error) {
+                Log.e(TAG, "onPlayerErrorChanged", error);
             }
         });
     }
