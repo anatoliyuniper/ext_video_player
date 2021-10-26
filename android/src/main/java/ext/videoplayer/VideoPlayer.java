@@ -5,6 +5,7 @@ import static com.google.android.exoplayer2.Player.REPEAT_MODE_OFF;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 import android.view.Surface;
 
 import com.google.android.exoplayer2.C;
@@ -39,6 +40,8 @@ import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
 
 final class VideoPlayer {
+    private static final String TAG = "ExtVideoPlayer";
+
     private static final String FORMAT_SS = "ss";
     private static final String FORMAT_DASH = "dash";
     private static final String FORMAT_HLS = "hls";
@@ -196,6 +199,7 @@ final class VideoPlayer {
 
             @Override
             public void onPlayerError(PlaybackException error) {
+                Log.e(TAG, "onPlayerError", error);
                 eventSink.error("VideoError", "Video player had error " + error, null);
             }
         });

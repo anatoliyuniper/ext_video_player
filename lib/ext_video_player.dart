@@ -276,6 +276,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     VideoQuality quality = youtubeVideoQuality ?? VideoQuality.medium360;
 
+    print("ExtVideoPlayer: Getting youtube direct url for $dataSource");
     final getUrlNewTimeStart = _getCurrentTimeMs();
     String finalYoutubeUrl = await _getYoutubeUrlNew(quality);
 
@@ -291,6 +292,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         print("ExtVideoPlayer: _getYoutubeUrlOld time taken=${_getCurrentTimeMs() - getUrlOldTimeStart}ms");
       }
     }
+
+    print("ExtVideoPlayer: Video direct link: $finalYoutubeUrl");
 
     DataSource dataSourceDescription;
     switch (dataSourceType) {
@@ -334,6 +337,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       if (_isDisposed) {
         return;
       }
+
+      print("ExtVideoPlayer: event: $event");
 
       switch (event.eventType) {
         case VideoEventType.initialized:
