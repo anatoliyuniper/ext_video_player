@@ -338,7 +338,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         return;
       }
 
-      print("ExtVideoPlayer: event: ${event.eventType}");
+      //to prevent state log spam
+      if (event.eventType != VideoEventType.bufferingUpdate) {
+        print("ExtVideoPlayer: event: ${event.eventType}");
+      }
 
       switch (event.eventType) {
         case VideoEventType.initialized:
