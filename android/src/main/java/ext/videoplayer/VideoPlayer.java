@@ -5,7 +5,6 @@ import static com.google.android.exoplayer2.Player.REPEAT_MODE_OFF;
 
 import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 import android.view.Surface;
 
 import com.google.android.exoplayer2.C;
@@ -28,6 +27,7 @@ import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 
 import java.util.Arrays;
@@ -74,6 +74,9 @@ final class VideoPlayer {
         this.eventChannel = eventChannel;
         this.textureEntry = textureEntry;
         this.options = options;
+
+        Log.setLogLevel(Log.LOG_LEVEL_ALL);
+        Log.setLogStackTraces(true);
 
         LoadControl loadControl = new DefaultLoadControl.Builder()
                 .setBufferDurationsMs(DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
@@ -202,11 +205,6 @@ final class VideoPlayer {
             public void onPlayerError(PlaybackException error) {
                 Log.e(TAG, "onPlayerError", error);
                 eventSink.error("VideoError", "Video player had error " + error, null);
-            }
-
-            @Override
-            public void onPlayerErrorChanged(PlaybackException error) {
-                Log.e(TAG, "onPlayerErrorChanged", error);
             }
         });
     }
