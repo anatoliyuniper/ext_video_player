@@ -338,7 +338,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         return;
       }
 
-      print("ExtVideoPlayer: event: $event");
+      print("ExtVideoPlayer: event: ${event.eventType}");
 
       switch (event.eventType) {
         case VideoEventType.initialized:
@@ -381,6 +381,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     void errorListener(Object obj) {
       final PlatformException e = obj as PlatformException;
+      print("ExtVideoPlayer: errorListener: ${e.message}");
       value = VideoPlayerValue.erroneous(e.message);
       _timer?.cancel();
       if (!initializingCompleter.isCompleted) {
