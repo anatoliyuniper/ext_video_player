@@ -285,7 +285,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     _logEvent("_getYoutubeUrlNew time taken=${_getCurrentTimeMs() - getUrlNewTimeStart}ms");
 
     if (finalYoutubeUrl == dataSource) {
-      print("ExtVideoPlayer: Could not get youtube url using first way");
+      _logEvent("Could not get youtube url using first way");
       final getUrlOldTimeStart = _getCurrentTimeMs();
       finalYoutubeUrl = await _getYoutubeUrlOld(_matchVideoQualityToYoutubeQuality(quality));
       _logEvent("_getYoutubeUrlOld time taken=${_getCurrentTimeMs() - getUrlOldTimeStart}ms");
@@ -384,7 +384,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     void errorListener(Object obj) {
       final PlatformException e = obj as PlatformException;
-      print("ExtVideoPlayer: errorListener: ${e.message}");
+      _logEvent("ExtVideoPlayer: errorListener: ${e.message}", exception: e);
       value = VideoPlayerValue.erroneous(e.message);
       _timer?.cancel();
       if (!initializingCompleter.isCompleted) {
