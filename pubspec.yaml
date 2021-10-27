@@ -34,11 +34,6 @@ dependencies:
   xml: ^5.0.2
   freezed_annotation: ^0.14.3
   json_annotation: 4.1.0
-  #youtube_explode_dart:
-  #  git:
-  #    url: https://github.com/DimaBrahin/youtube_explode_dart
-  #    ref: urls_obtain_order
-  #youtube_explode_dart: ^1.9.4
 
 dev_dependencies:
   pedantic: ^1.8.0

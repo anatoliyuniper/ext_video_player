@@ -44,11 +44,9 @@ android {
     }
 
     dependencies {
-        /*implementation 'com.google.android.exoplayer:exoplayer-core:2.15.1'
-        implementation 'com.google.android.exoplayer:exoplayer-hls:2.15.1'
-        implementation 'com.google.android.exoplayer:exoplayer-dash:2.15.1'
-        implementation 'com.google.android.exoplayer:exoplayer-smoothstreaming:2.15.1'
-        implementation 'com.google.android.exoplayer:extension-rtmp:2.15.1'*/
+        //we are unable to use latest at the time(2.15.1) due to having conflicting
+        //flutter_html(versions 2.1.0-2.1.5) dependency in main project causing
+        //Player.Listener to behave incorrectly
         implementation 'com.google.android.exoplayer:exoplayer-core:2.12.1'
         implementation 'com.google.android.exoplayer:exoplayer-hls:2.12.1'
         implementation 'com.google.android.exoplayer:exoplayer-dash:2.12.1'

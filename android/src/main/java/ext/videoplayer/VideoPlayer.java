@@ -8,12 +8,9 @@ import android.net.Uri;
 import android.view.Surface;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.MediaItem;
-//import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -49,9 +46,6 @@ final class VideoPlayer {
     private static final String FORMAT_HLS = "hls";
     private static final String FORMAT_OTHER = "other";
 
-    private static final int MIN_PLAYBACK_START_BUFFER = 700;
-    private static final int MIN_PLAYBACK_RESUME_BUFFER = 1300;
-
     private final SimpleExoPlayer exoPlayer;
 
     private Surface surface;
@@ -80,18 +74,7 @@ final class VideoPlayer {
         Log.setLogLevel(Log.LOG_LEVEL_ALL);
         Log.setLogStackTraces(true);
 
-        LoadControl loadControl = new DefaultLoadControl.Builder()
-                .setBufferDurationsMs(DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
-                        DefaultLoadControl.DEFAULT_MAX_BUFFER_MS,
-                        MIN_PLAYBACK_START_BUFFER,
-                        MIN_PLAYBACK_RESUME_BUFFER)
-                .setTargetBufferBytes(C.LENGTH_UNSET)
-                .setPrioritizeTimeOverSizeThresholds(true)
-                .build();
-
-        exoPlayer = new SimpleExoPlayer.Builder(context)
-                //.setLoadControl(loadControl)
-                .build();
+        exoPlayer = new SimpleExoPlayer.Builder(context).build();
 
         Uri uri = Uri.parse(dataSource);
 
@@ -104,9 +87,6 @@ final class VideoPlayer {
                             DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
                             DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
                             true);
-            /*dataSourceFactory = new DefaultHttpDataSource.Factory()
-                    .setUserAgent("ExoPlayer")
-                    .setAllowCrossProtocolRedirects(true);*/
         } else {
             dataSourceFactory = new DefaultDataSourceFactory(context, "ExoPlayer");
         }
@@ -217,31 +197,6 @@ final class VideoPlayer {
                 eventSink.error("VideoError", "Video player had error " + error, null);
             }
         });
-
-        /*exoPlayer.addListener(new Player.Listener() {
-            @Override
-            public void onPlaybackStateChanged(int playbackState) {
-                Log.d(TAG, "onPlaybackStateChanged: " + playbackState);
-                if (playbackState == Player.STATE_BUFFERING) {
-                    sendBufferingUpdate();
-                } else if (playbackState == Player.STATE_READY) {
-                    if (!isInitialized) {
-                        isInitialized = true;
-                        sendInitialized();
-                    }
-                } else if (playbackState == Player.STATE_ENDED) {
-                    Map<String, Object> event = new HashMap<>();
-                    event.put("event", "completed");
-                    eventSink.success(event);
-                }
-            }
-
-            @Override
-            public void onPlayerError(PlaybackException error) {
-                Log.e(TAG, "onPlayerError", error);
-                eventSink.error("VideoError", "Video player had error " + error, null);
-            }
-        });*/
     }
 
     void sendBufferingUpdate() {
