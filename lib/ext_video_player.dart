@@ -253,8 +253,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// [initialize()] is called.
   final Future<ClosedCaptionFile>? closedCaptionFile;
 
-  /// Flag for whether to print operations time taken
-  final bool _logPerformance = true;
+  PerformanceListener? _performanceListener;
+  set performanceListener(PerformanceListener value) {
+    _performanceListener = value;
+  }
 
   ClosedCaptionFile? _closedCaptionFile;
   Timer? _timer;
@@ -276,24 +278,20 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     VideoQuality quality = youtubeVideoQuality ?? VideoQuality.medium360;
 
-    print("ExtVideoPlayer: Getting youtube direct url for $dataSource");
+    _logEvent("Getting youtube direct url for $dataSource");
     final getUrlNewTimeStart = _getCurrentTimeMs();
     String finalYoutubeUrl = await _getYoutubeUrlNew(quality);
 
-    if (_logPerformance) {
-      print("ExtVideoPlayer: _getYoutubeUrlNew time taken=${_getCurrentTimeMs() - getUrlNewTimeStart}ms");
-    }
+    _logEvent("_getYoutubeUrlNew time taken=${_getCurrentTimeMs() - getUrlNewTimeStart}ms");
 
     if (finalYoutubeUrl == dataSource) {
       print("ExtVideoPlayer: Could not get youtube url using first way");
       final getUrlOldTimeStart = _getCurrentTimeMs();
       finalYoutubeUrl = await _getYoutubeUrlOld(_matchVideoQualityToYoutubeQuality(quality));
-      if (_logPerformance) {
-        print("ExtVideoPlayer: _getYoutubeUrlOld time taken=${_getCurrentTimeMs() - getUrlOldTimeStart}ms");
-      }
+      _logEvent("_getYoutubeUrlOld time taken=${_getCurrentTimeMs() - getUrlOldTimeStart}ms");
     }
 
-    print("ExtVideoPlayer: Video direct link: $finalYoutubeUrl");
+    _logEvent("Video direct link obtained: $finalYoutubeUrl");
 
     DataSource dataSourceDescription;
     switch (dataSourceType) {
@@ -330,11 +328,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           .setMixWithOthers(videoPlayerOptions!.mixWithOthers);
     }
 
-    final videoPlatformCreateTimeStart = _getCurrentTimeMs();
     _textureId = await _videoPlayerPlatform.create(dataSourceDescription);
-    if (_logPerformance) {
-      print("ExtVideoPlayer: _videoPlayerPlatform.create time taken=${_getCurrentTimeMs() - videoPlatformCreateTimeStart}ms");
-    }
     _creatingCompleter?.complete(null);
     final Completer<void> initializingCompleter = Completer<void>();
 
@@ -351,9 +345,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
       switch (event.eventType) {
         case VideoEventType.initialized:
-          if (_logPerformance) {
-            print("ExtVideoPlayer: initialize time taken=${_getCurrentTimeMs() - initializeStart}ms");
-          }
+          _logEvent("initialize time taken=${_getCurrentTimeMs() - initializeStart}ms");
           value = value.copyWith(
             duration: event.duration,
             size: event.size,
@@ -372,9 +364,11 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           break;
         case VideoEventType.bufferingStart:
           value = value.copyWith(isBuffering: true);
+          _logEvent("Video buffering started");
           break;
         case VideoEventType.bufferingEnd:
           value = value.copyWith(isBuffering: false);
+          _logEvent("Video buffering ended");
           break;
         case VideoEventType.unknown:
           break;
@@ -538,6 +532,16 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
   int _getCurrentTimeMs() {
     return DateTime.now().millisecondsSinceEpoch;
+  }
+
+  void _logEvent(String message, {Exception? exception}) {
+    final logMessage = "ExtVideoPlayer: $message";
+    print(logMessage);
+    if (exception == null) {
+      _performanceListener?.onPlayerEvent(logMessage);
+    } else {
+      _performanceListener?.onPlayerError(logMessage, exception);
+    }
   }
 
   @override
@@ -1121,4 +1125,10 @@ class ClosedCaption extends StatelessWidget {
       ),
     );
   }
+}
+
+class PerformanceListener {
+  void onPlayerEvent(String message) {}
+
+  void onPlayerError(String message, Exception e) {}
 }

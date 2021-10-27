@@ -178,9 +178,11 @@ final class VideoPlayer {
             public void onPlaybackStateChanged(int playbackState) {
                 Log.d(TAG, "onPlaybackStateChanged: " + playbackState);
                 if (playbackState == Player.STATE_BUFFERING) {
-                    sendBufferingUpdate();
+                    sendBufferingStart();
                 } else if (playbackState == Player.STATE_READY) {
-                    if (!isInitialized) {
+                    if (isInitialized) {
+                        sendBufferingEnd();
+                    } else {
                         isInitialized = true;
                         sendInitialized();
                     }
@@ -197,6 +199,18 @@ final class VideoPlayer {
                 eventSink.error("VideoError", "Video player had error " + error, null);
             }
         });
+    }
+
+    void sendBufferingStart() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("event", "bufferingStart");
+        eventSink.success(event);
+    }
+
+    void sendBufferingEnd() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("event", "bufferingEnd");
+        eventSink.success(event);
     }
 
     void sendBufferingUpdate() {
