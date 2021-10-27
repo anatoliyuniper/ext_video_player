@@ -196,7 +196,7 @@ final class VideoPlayer {
             @Override
             public void onPlayerError(ExoPlaybackException error) {
                 Log.e(TAG, "onPlayerError", error);
-                eventSink.error("VideoError", "Video player had error " + error, null);
+                eventSink.error("VideoError", "Video player had error " + error +  " " + Log.getThrowableString(error), null);
             }
         });
     }
