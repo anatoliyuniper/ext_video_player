@@ -384,7 +384,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     void errorListener(Object obj) {
       final PlatformException e = obj as PlatformException;
-      _logEvent("ExtVideoPlayer: errorListener: ${e.message}", exception: e);
+      _logEvent("ExtVideoPlayer: errorListener: ${e.message} ${e.stacktrace}");
       value = VideoPlayerValue.erroneous(e.message);
       _timer?.cancel();
       if (!initializingCompleter.isCompleted) {
@@ -534,14 +534,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     return DateTime.now().millisecondsSinceEpoch;
   }
 
-  void _logEvent(String message, {Exception? exception}) {
+  void _logEvent(String message) {
     final logMessage = "ExtVideoPlayer: $message";
     print(logMessage);
-    if (exception == null) {
-      _performanceListener?.onPlayerEvent(logMessage);
-    } else {
-      _performanceListener?.onPlayerError(logMessage, exception);
-    }
+    _performanceListener?.call(logMessage);
   }
 
   @override
@@ -1127,8 +1123,4 @@ class ClosedCaption extends StatelessWidget {
   }
 }
 
-class PerformanceListener {
-  void onPlayerEvent(String message) {}
-
-  void onPlayerError(String message, Exception e) {}
-}
+typedef PerformanceListener = void Function(String message);
