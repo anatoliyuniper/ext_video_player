@@ -9,10 +9,11 @@ import android.view.Surface;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.PlaybackException;
+//import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -27,6 +28,7 @@ import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 
@@ -88,16 +90,23 @@ final class VideoPlayer {
                 .build();
 
         exoPlayer = new SimpleExoPlayer.Builder(context)
-                .setLoadControl(loadControl)
+                //.setLoadControl(loadControl)
                 .build();
 
         Uri uri = Uri.parse(dataSource);
 
         DataSource.Factory dataSourceFactory;
         if (isHTTP(uri)) {
-            dataSourceFactory = new DefaultHttpDataSource.Factory()
+            dataSourceFactory =
+                    new DefaultHttpDataSourceFactory(
+                            "ExoPlayer",
+                            null,
+                            DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+                            DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
+                            true);
+            /*dataSourceFactory = new DefaultHttpDataSource.Factory()
                     .setUserAgent("ExoPlayer")
-                    .setAllowCrossProtocolRedirects(true);
+                    .setAllowCrossProtocolRedirects(true);*/
         } else {
             dataSourceFactory = new DefaultDataSourceFactory(context, "ExoPlayer");
         }
@@ -183,7 +192,33 @@ final class VideoPlayer {
         exoPlayer.setVideoSurface(surface);
         setAudioAttributes(exoPlayer, options.mixWithOthers);
 
-        exoPlayer.addListener(new Player.Listener() {
+        exoPlayer.addListener(new Player.EventListener() {
+
+            @Override
+            public void onPlaybackStateChanged(int playbackState) {
+                Log.d(TAG, "onPlaybackStateChanged: " + playbackState);
+                if (playbackState == Player.STATE_BUFFERING) {
+                    sendBufferingUpdate();
+                } else if (playbackState == Player.STATE_READY) {
+                    if (!isInitialized) {
+                        isInitialized = true;
+                        sendInitialized();
+                    }
+                } else if (playbackState == Player.STATE_ENDED) {
+                    Map<String, Object> event = new HashMap<>();
+                    event.put("event", "completed");
+                    eventSink.success(event);
+                }
+            }
+
+            @Override
+            public void onPlayerError(ExoPlaybackException error) {
+                Log.e(TAG, "onPlayerError", error);
+                eventSink.error("VideoError", "Video player had error " + error, null);
+            }
+        });
+
+        /*exoPlayer.addListener(new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(int playbackState) {
                 Log.d(TAG, "onPlaybackStateChanged: " + playbackState);
@@ -206,7 +241,7 @@ final class VideoPlayer {
                 Log.e(TAG, "onPlayerError", error);
                 eventSink.error("VideoError", "Video player had error " + error, null);
             }
-        });
+        });*/
     }
 
     void sendBufferingUpdate() {
