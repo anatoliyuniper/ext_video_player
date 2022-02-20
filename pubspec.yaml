@@ -33,7 +33,7 @@ dependencies:
   html: ^0.15.0
   xml: ^5.0.2
   freezed_annotation: ^0.14.3
-  json_annotation: 4.1.0
+  json_annotation: 4.3.0
 
 dev_dependencies:
   pedantic: ^1.8.0
