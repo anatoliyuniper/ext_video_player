@@ -16,7 +16,7 @@ flutter:
         default_package: video_player_web
 
 dependencies:
-  meta: 1.7.0
+  meta: 1.8.0
   video_player_platform_interface: 4.2.0
 
   # The design on https://flutter.dev/go/federated-plugins was to leave
