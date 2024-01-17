@@ -31,7 +31,7 @@ dependencies:
   
   http: ^0.13.3
   html: ^0.15.0
-  xml: ^5.0.2
+  xml: ^6.5.0
   freezed_annotation: ^0.14.3
   json_annotation: 4.3.0
 
